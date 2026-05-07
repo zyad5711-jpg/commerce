@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>الحسابات</title>
+
+<link rel="stylesheet" href="style.css">
+
+<style>
+
+body{
+    font-family: Arial;
+}
+
+.container{
+    width:90%;
+    margin:auto;
+    margin-top:30px;
+}
+
+table{
+    width:100%;
+    background:white;
+    border-collapse:collapse;
+}
+
+th,td{
+    border:1px solid #ccc;
+    padding:15px;
+    text-align:center;
+    font-size:22px;
+}
+
+.person-row{
+    cursor:pointer;
+}
+
+.red{
+    color:red;
+    font-weight:bold;
+}
+
+.green{
+    color:green;
+    font-weight:bold;
+}
+
+.add-btn{
+    margin-top:20px;
+    padding:12px 25px;
+    font-size:20px;
+    cursor:pointer;
+}
+
+/* popup */
+
+.popup{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,.5);
+    display:none;
+    justify-content:center;
+    align-items:center;
+}
+
+.popup-box{
+    background:white;
+    width:320px;
+    padding:20px;
+    border-radius:10px;
+    text-align:center;
+}
+
+.popup-box input{
+    width:90%;
+    padding:10px;
+    margin-top:10px;
+    font-size:18px;
+}
+
+.popup-box button{
+    margin-top:10px;
+    padding:10px 20px;
+    font-size:18px;
+    cursor:pointer;
+}
+
+.balance{
+    font-size:28px;
+    margin-bottom:15px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="nav">
+    <a href="index.html">الرئيسية</a>
+    <a href="daily.html">العمولة</a>
+    <a href="lines.html">الخطوط</a>
+    <a href="accounts.html">كناش</a>
+    <a href="closing.html">التقفيل</a>
+</div>
+
+<div class="container">
+
+<table>
+
+<tr>
+    <th>الاسم</th>
+    <th>المبلغ</th>
+    <th>حذف</th>
+</tr>
+
+<tbody id="accountsBody">
+</tbody>
+
+</table>
+
+<div style="text-align:center;">
+    <button class="add-btn" onclick="openAddPopup()">
+        ➕ إضافة شخص
+    </button>
+</div>
+
+</div>
+
+<!-- popup اضافة شخص -->
+
+<div class="popup" id="addPopup">
+
+<div class="popup-box">
+
+<h2>ادخل الاسم</h2>
+
+<input type="text" id="personName">
+
+<br>
+
+<button onclick="addPerson()">إضافة</button>
+
+</div>
+
+</div>
+
+<!-- popup الحساب -->
+
+<div class="popup" id="accountPopup">
+
+<div class="popup-box">
+
+<h2 id="popupName"></h2>
+
+<div class="balance">
+الرصيد :
+<span id="popupBalance">0</span>
+</div>
+
+<input type="number" id="giveInput" placeholder="اعطيت">
+
+<button style="background:red;color:white;"
+onclick="giveMoney()">
+اعطيت
+</button>
+
+<br>
+
+<input type="number" id="takeInput" placeholder="اخذت">
+
+<button style="background:green;color:white;"
+onclick="takeMoney()">
+اخذت
+</button>
+
+<br>
+
+<button onclick="closePopup()">
+إغلاق
+</button>
+
+</div>
+
+</div>
+
+<script>
+
+let accounts = JSON.parse(localStorage.getItem("accounts") || "[]");
+
+let currentIndex = null;
+
+function saveAccounts(){
+    localStorage.setItem("accounts", JSON.stringify(accounts));
+}
+
+function renderAccounts(){
+
+    let body = document.getElementById("accountsBody");
+
+    body.innerHTML = "";
+
+    accounts.forEach((acc,index)=>{
+
+        let colorClass = acc.balance >= 0 ? "green" : "red";
+
+        body.innerHTML += `
+        <tr>
+            <td class="person-row" onclick="openAccount(${index})">
+                ${acc.name}
+            </td>
+
+            <td class="${colorClass} person-row" onclick="openAccount(${index})">
+                ${Math.abs(acc.balance)}
+            </td>
+
+            <td>
+                <span 
+                onclick="deletePerson(${index})"
+                style="color:red;cursor:pointer;font-weight:bold;">
+                حذف
+                </span>
+            </td>
+        </tr>
+        `;
+
+    });
+}
+
+function openAddPopup(){
+    document.getElementById("addPopup").style.display = "flex";
+}
+
+function addPerson(){
+
+    let name = document.getElementById("personName").value;
+
+    if(name.trim() == "") return;
+
+    accounts.push({
+        name:name,
+        balance:0
+    });
+
+    saveAccounts();
+    renderAccounts();
+
+    document.getElementById("personName").value = "";
+
+    document.getElementById("addPopup").style.display = "none";
+}
+
+function openAccount(index){
+
+    currentIndex = index;
+
+    let acc = accounts[index];
+
+    document.getElementById("popupName").innerText = acc.name;
+
+    document.getElementById("popupBalance").innerText = Math.abs(acc.balance);
+
+    if(acc.balance >= 0){
+        document.getElementById("popupBalance").style.color = "green";
+    }else{
+        document.getElementById("popupBalance").style.color = "red";
+    }
+
+    document.getElementById("accountPopup").style.display = "flex";
+}
+
+function giveMoney(){
+
+    let val = +document.getElementById("giveInput").value || 0;
+
+    accounts[currentIndex].balance -= val;
+
+    saveAccounts();
+    renderAccounts();
+    openAccount(currentIndex);
+
+    document.getElementById("giveInput").value = "";
+}
+
+function takeMoney(){
+
+    let val = +document.getElementById("takeInput").value || 0;
+
+    accounts[currentIndex].balance += val;
+
+    saveAccounts();
+    renderAccounts();
+    openAccount(currentIndex);
+
+    document.getElementById("takeInput").value = "";
+}
+
+function closePopup(){
+    document.getElementById("accountPopup").style.display = "none";
+}
+
+function deletePerson(index){
+
+    accounts.splice(index,1);
+
+    saveAccounts();
+    renderAccounts();
+
+}
+
+// تشغيل أولي
+renderAccounts();
+
+</script>
+
+</body>
+</html>
